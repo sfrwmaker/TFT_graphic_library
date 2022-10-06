@@ -1,0 +1,2 @@
+The project is written under MIT Licence and can be disptributed as is without any charges.
+However, to display a text, the part of the u8g2 library and u8g2 fonts were used, so you should consult with LICENCE agreement of the u8g2 library as well.
