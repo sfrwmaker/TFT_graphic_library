@@ -1,0 +1,2 @@
+This is a 16-bit color graphic library for TFT displays that have SPI interface based on several controllers: ili9341, ili9488, st7735 and st7796.
+The library can work on STM32 micro-controllers and uses HAL development library.
