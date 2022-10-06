@@ -1,2 +1,7 @@
 This is a 16-bit color graphic library for TFT displays that have SPI interface based on several controllers: ili9341, ili9488, st7735 and st7796.
 The library can work on STM32 micro-controllers and uses HAL development library.
+Directory structure:
+Inc & Src directories is the example source code that illustrate how to use the library.
+FatFS is a generic FAT library (http://elm-chan.org/fsw/ff/00index_e.html) that has been configured to work with SD-card
+SD_SPI is a driver for SD-card reader connected via SPI bus
+TFT is a graphic library source directory
