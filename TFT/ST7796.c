@@ -86,55 +86,54 @@ typedef enum {
 
 // Initialize the Display
 void ST7796_Init(void) {
-	// Initialize transfer infrastructure for the display SPI bus (With DMA)
-	TFT_SPI_ColorBlockInit();
+	// Initialize display interface. By default the library guess the display interface
+		TFT_InterfaceSetup(TFT_16bits, 0);
 	// Reset display hardware
 	TFT_DEF_Reset();
 	// SOFTWARE RESET
-	TFT_SPI_Command(CMD_SWRESET_01,	0, 0);
+	TFT_Command(CMD_SWRESET_01,	0, 0);
 	TFT_Delay(1000);
 	// Exit sleep mode
 	TFT_DEF_SleepOut();
 	
 	// Command Set control: Enable extension command 2 partI
-	TFT_SPI_Command(CMD_CSCON_F0,		(uint8_t *)"\xC3", 1);
+	TFT_Command(CMD_CSCON_F0,		(uint8_t *)"\xC3", 1);
 	// Command Set control: Enable extension command 2 partII
-	TFT_SPI_Command(CMD_CSCON_F0,		(uint8_t *)"\x96", 1);
+	TFT_Command(CMD_CSCON_F0,		(uint8_t *)"\x96", 1);
 	// Memory access mode: X-Mirror, Top-Left to right-Buttom, RGB
-	TFT_SPI_Command(CMD_MADCTL_36,		(uint8_t *)"\x48", 1);
+	TFT_Command(CMD_MADCTL_36,		(uint8_t *)"\x48", 1);
 	// Interface Pixel Format: 16 bits
-	TFT_SPI_Command(CMD_PIXSET_3A,		(uint8_t *)"\x55", 1);
+	TFT_Command(CMD_PIXSET_3A,		(uint8_t *)"\x55", 1);
 	//Display Inversion Control: 1-dot inversion
-	TFT_SPI_Command(CMD_INVTR_B4,		(uint8_t *)"\x01", 1);
+	TFT_Command(CMD_INVTR_B4,		(uint8_t *)"\x01", 1);
 	// Display function control: Source Output Scan from S1 to S960, Gate Output scan from G1 to G480, scan cycle=2; LCD Drive Line=8*(59+1)
-	TFT_SPI_Command(CMD_DFC_B6,			(uint8_t *)"\x80\x02\x3B", 3);
+	TFT_Command(CMD_DFC_B6,			(uint8_t *)"\x80\x02\x3B", 3);
 	// Display Output Ctrl Adjust: Source eqaulizing period time= 22.5 us; Timing for "Gate start"=25; Timing for "Gate End"=37 (Tclk), Gate driver EQ function ON
-	TFT_SPI_Command(CMD_DOCA_E8,		(uint8_t *)"\x40\x8A\x00\x00\x29\x19\xA5\x33", 8);
+	TFT_Command(CMD_DOCA_E8,		(uint8_t *)"\x40\x8A\x00\x00\x29\x19\xA5\x33", 8);
 	// Power Control 2: VGH, VGL
-	TFT_SPI_Command(CMD_PWCTRL2_C1,		(uint8_t *)"\x06", 1);
+	TFT_Command(CMD_PWCTRL2_C1,		(uint8_t *)"\x06", 1);
 	TFT_Delay(5);
 	// Power Control 3
-	TFT_SPI_Command(CMD_PWCTRL3_C2,		(uint8_t *)"\xA7", 1);
+	TFT_Command(CMD_PWCTRL3_C2,		(uint8_t *)"\xA7", 1);
 	// Power Control 3: Vcom 0.9
-	TFT_SPI_Command(CMD_VMCTRL1_C5,		(uint8_t *)"\x18", 1);
+	TFT_Command(CMD_VMCTRL1_C5,		(uint8_t *)"\x18", 1);
 	TFT_Delay(120);
 	
 	// Gamma"+"
-	TFT_SPI_Command(CMD_PGAMCTRL_E0,	(uint8_t *)"\xF0\x09\x0B\x06\x04\x15\x2F\x54\x42\x3C\x17\x14\x16\x1B", 14);
+	TFT_Command(CMD_PGAMCTRL_E0,	(uint8_t *)"\xF0\x09\x0B\x06\x04\x15\x2F\x54\x42\x3C\x17\x14\x16\x1B", 14);
 	// Gamma"-"
-	TFT_SPI_Command(CMD_NGAMCTRL_E1,	(uint8_t *)"\xE0\x09\x0B\x06\x04\x03\x2B\x43\x42\x3B\x16\x14\x17\x1B", 14);
+	TFT_Command(CMD_NGAMCTRL_E1,	(uint8_t *)"\xE0\x09\x0B\x06\x04\x03\x2B\x43\x42\x3B\x16\x14\x17\x1B", 14);
 	TFT_Delay(120);
 	// Command Set control: Disable extension command 2 partI
-	TFT_SPI_Command(CMD_CSCON_F0,		(uint8_t *)"\x3C", 1);
+	TFT_Command(CMD_CSCON_F0,		(uint8_t *)"\x3C", 1);
 	// Command Set control: Disable extension command 2 partII
-	TFT_SPI_Command(CMD_CSCON_F0,		(uint8_t *)"\x69", 1);
+	TFT_Command(CMD_CSCON_F0,		(uint8_t *)"\x69", 1);
 	
 	// Turn On Display
-	TFT_SPI_Command(CMD_DISPON_29,		0, 0);
+	TFT_Command(CMD_DISPON_29,		0, 0);
 	TFT_Delay(5);
 	
 	// Setup display parameters
 	uint8_t rot[4] = {0x40|0x08, 0x20|0x08, 0x80|0x08, 0x40|0x80|0x20|0x08};
-	TFT_Setup(ST7796_SCREEN_WIDTH, ST7796_SCREEN_HEIGHT, rot, 0);
-	TFT_Pixel_Setup(TFT_16bits);
+	TFT_Setup(ST7796_SCREEN_WIDTH, ST7796_SCREEN_HEIGHT, rot);
 }

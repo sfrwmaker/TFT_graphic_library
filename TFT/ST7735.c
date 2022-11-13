@@ -86,51 +86,50 @@ typedef enum {
 
 // Initialize the Display
 void ST7735_Init(void) {
-	// Initialize transfer infrastructure for the display SPI bus (With DMA)
-	TFT_SPI_ColorBlockInit();
+	// Initialize display interface. By default the library guess the display interface
+	TFT_InterfaceSetup(TFT_16bits, 0);
 	// Reset display hardware
 	TFT_DEF_Reset();
 	// SOFTWARE RESET
 	TFT_Delay(1);
-	TFT_SPI_Command(CMD_SWRESET_01,		0, 0);
+	TFT_Command(CMD_SWRESET_01,		0, 0);
 	TFT_Delay(500);
 
 	// positive gamma control
-	TFT_SPI_Command(CMD_PGAMCTRL_E0,	(uint8_t *)"\x09\x16\x09\x20\x21\x1B\x13\x19\x17\x15\x1E\x2B\x04\x05\x02\x0E", 16);
+	TFT_Command(CMD_PGAMCTRL_E0,	(uint8_t *)"\x09\x16\x09\x20\x21\x1B\x13\x19\x17\x15\x1E\x2B\x04\x05\x02\x0E", 16);
 	// negative gamma control
-	TFT_SPI_Command(CMD_NGAMCTRL_E1,	(uint8_t *)"\x0B\x14\x08\x1E\x22\x1D\x18\x1E\x1B\x1A\x24\x2B\x06\x06\x02\x0F", 16);
+	TFT_Command(CMD_NGAMCTRL_E1,	(uint8_t *)"\x0B\x14\x08\x1E\x22\x1D\x18\x1E\x1B\x1A\x24\x2B\x06\x06\x02\x0F", 16);
 	// Power Control 1 (Vreg1out, Verg2out)
-	TFT_SPI_Command(CMD_PWCTRL1_C0,		(uint8_t *)"\x17\x15", 2);
+	TFT_Command(CMD_PWCTRL1_C0,		(uint8_t *)"\x17\x15", 2);
 	// Power Control 2 (VGH,VGL)
-	TFT_SPI_Command(CMD_PWCTRL2_C1,		(uint8_t *)"\x41", 1);
+	TFT_Command(CMD_PWCTRL2_C1,		(uint8_t *)"\x41", 1);
 	// Power Control 3 (Vcom)
-	TFT_SPI_Command(CMD_VMCTRL1_C5,		(uint8_t *)"\x00\x12\x80", 3);
+	TFT_Command(CMD_VMCTRL1_C5,		(uint8_t *)"\x00\x12\x80", 3);
 	// Interface Pixel Format (16 bit)
-	TFT_SPI_Command(CMD_PIXSET_3A,		(uint8_t *)"\x55", 1);
+	TFT_Command(CMD_PIXSET_3A,		(uint8_t *)"\x55", 1);
 	// Interface Mode Control (SDO NOT USE)
-	TFT_SPI_Command(CMD_IFMODE_B0,		(uint8_t *)"\x80", 1);
+	TFT_Command(CMD_IFMODE_B0,		(uint8_t *)"\x80", 1);
 	// Frame rate (60Hz)
-	TFT_SPI_Command(CMD_FRMCTR1_B1,		(uint8_t *)"\xA0", 1);
+	TFT_Command(CMD_FRMCTR1_B1,		(uint8_t *)"\xA0", 1);
 	// Display Inversion Control (2-dot)
-	TFT_SPI_Command(CMD_INVTR_B4,		(uint8_t *)"\x02", 1);
+	TFT_Command(CMD_INVTR_B4,		(uint8_t *)"\x02", 1);
 	// Display Function Control RGB/MCU Interface Control
-	TFT_SPI_Command(CMD_DFC_B6,			(uint8_t *)"\x02\x02", 2);
+	TFT_Command(CMD_DFC_B6,			(uint8_t *)"\x02\x02", 2);
 	// Set Image Function (Disable 24 bit data)
-	TFT_SPI_Command(0xE9,				(uint8_t *)"\x00", 1);
+	TFT_Command(0xE9,				(uint8_t *)"\x00", 1);
 	// Adjust Control (D7 stream, loose)
-	TFT_SPI_Command(0xF7,				(uint8_t *)"\xA9\x51\x2C\x82", 4);
+	TFT_Command(0xF7,				(uint8_t *)"\xA9\x51\x2C\x82", 4);
 
-	TFT_SPI_Command(CMD_MADCTL_36,		(uint8_t *)"\x00", 1);
+	TFT_Command(CMD_MADCTL_36,		(uint8_t *)"\x00", 1);
 
 	// Exit sleep mode
 	TFT_DEF_SleepOut();
 
 	// Turn On Display
-	TFT_SPI_Command(CMD_DISPON_29,		0, 0);
+	TFT_Command(CMD_DISPON_29,		0, 0);
 	TFT_Delay(5);
 
 	// Setup display parameters
 	uint8_t rot[4] = {0x00, 0x40|0x20, 0x80|0x40, 0x80|0x20};
-	TFT_Setup(ST7735_SCREEN_WIDTH, ST7735_SCREEN_HEIGHT, rot, 0);
-	TFT_Pixel_Setup(TFT_16bits);
+	TFT_Setup(ST7735_SCREEN_WIDTH, ST7735_SCREEN_HEIGHT, rot);
 }

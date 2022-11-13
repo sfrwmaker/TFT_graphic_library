@@ -1,7 +1,7 @@
 /*
  * common.h
  *
- *  Created on: Nov 17, 2020
+ *  Created on: Nov 4, 2022
  *      Author: Alex
  *
  *  Base component of a library. Contains set of general functions to manage TFT display family.
@@ -17,25 +17,15 @@
  *  <display>_Init(void) - to initialize the display
  *  <display>_SetRotation(tRotation rotation)
  *  because these methods depends on hardware.
- *
- *  CS & DC pins should share the same GPIO port
  */
 
 #ifndef _COMMON_H
 #define _COMMON_H
 
-#include "main.h"
-#include "low_level.h"
 #include <stdbool.h>
-
-#define TFT_SPI_PORT		hspi1
-extern SPI_HandleTypeDef 	TFT_SPI_PORT;
-
-// To disable DMA support, comment out next line
-//#define TFT_USE_DMA			1
-
-/* Include code for BMP and JPEG drawings, external FAT drive required */
- #define TFT_BMP_JPEG_ENABLE
+#include "main.h"
+#include "interface.h"
+#include "config.h"
 
 typedef enum {
 	TFT_ROTATION_0 	 = 0,
@@ -67,24 +57,7 @@ typedef enum {
 	GREY		= 0x52AA
 } tColor;
 
-typedef void 		(*t_SetAddrWindow)(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
-typedef void 		(*t_StartDrawArea)(uint16_t x0, uint16_t y0, uint16_t width, uint16_t height);
-typedef void 		(*t_DrawFilledRect)(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t color);
-typedef void 		(*t_DrawPixel)(uint16_t x,  uint16_t y, uint16_t color);
-typedef void 		(*t_ColorBlockSend)(uint16_t color, uint32_t size);
 typedef uint16_t	(*t_NextPixel)(uint16_t row, uint16_t col);
-
-typedef struct {
-	t_StartDrawArea		pStartDrawArea;
-	t_DrawFilledRect	pDrawFilledRect;
-	t_DrawPixel			pDrawPixel;
-} tTFT_INTFUNC;
-
-typedef enum {
-	TFT_16bits	= 0,
-	TFT_18bits	= 1
-} tTFT_PIXEL_BITS;
-
 typedef double (*LineThickness)(uint16_t pos, uint16_t length);
 
 #ifdef __cplusplus
@@ -122,32 +95,15 @@ void 		TFT_DrawPixmap(uint16_t x0, uint16_t y0, uint16_t area_width, uint16_t ar
 void		TFT_DrawThickLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t thickness, uint16_t color);
 void		TFT_DrawVarThickLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, LineThickness thickness, uint16_t color);
 
-// Functions to manage display
-void		TFT_DEF_Reset(void);
-void		TFT_DEF_SleepIn(void);
-void		TFT_DEF_SleepOut(void);
-void		TFT_DEF_InvertDisplay(bool on);
-void		TFT_DEF_DisplayOn(bool on);
-void		TFT_DEF_IdleMode(bool on);
-uint16_t 	TFT_DEF_ReadPixel(uint16_t x, uint16_t y, bool is16bit_color);
-
 // Functions to setup display
-void		TFT_Setup(uint16_t generic_width, uint16_t generic_height, uint8_t madctl[4], tTFT_INTFUNC *pINT);
-void		TFT_Pixel_Setup(tTFT_PIXEL_BITS pixel_bits);
+void		TFT_Setup(uint16_t generic_width, uint16_t generic_height, uint8_t madctl[4]);
 void		TFT_SetRotation(tRotation rotation);
-
-// Interface to extend functionality
-void		TFT_SetAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
-void		TFT_StartDrawArea(uint16_t x0, uint16_t y0, uint16_t width, uint16_t height);
-void		TFT_FinishDrawArea();
-
-// Low-level functions
-void		TFT_SPI_DATA_MODE(void);
+uint16_t 	TFT_ReadPixel(uint16_t x, uint16_t y, bool is16bit_color);
+void 		TFT_SetAttrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
+void 		TFT_StartDrawArea(uint16_t x0, uint16_t y0, uint16_t width, uint16_t height);
 
 #ifdef __cplusplus
 }
 #endif
-
-#define		TFT_Delay(a)	HAL_Delay(a);
 
 #endif

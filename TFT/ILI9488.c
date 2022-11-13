@@ -110,52 +110,51 @@ typedef enum {
 
 // Initialize the Display
 void ILI9488_Init(void) {
-	// Initialize transfer infrastructure for the display SPI bus (With DMA)
-	TFT_SPI_ColorBlockInit();
+	// Initialize display interface. By default the library guess the display interface
+	TFT_InterfaceSetup(TFT_18bits, 0);
 	// Reset display hardware
 	TFT_DEF_Reset();
 	// SOFTWARE RESET
-	TFT_SPI_Command(CMD_SWRESET_01,	0, 0);
+	TFT_Command(CMD_SWRESET_01,	0, 0);
 	TFT_Delay(1000);
 
-	TFT_SPI_Command(CMD_PGAMCTRL_E0,	(uint8_t *)"\x00\x03\x09\x08\x16\x0A\x3F\x78\x4C\x09\x0A\x08\x16\x1a\x0f", 15);
-	TFT_SPI_Command(CMD_NGAMCTRL_E1,	(uint8_t *)"\x00\x16\x19\x03\x0F\x05\x32\x45\x46\x04\x0E\x0D\x35\x37\x0F", 15);
+	TFT_Command(CMD_PGAMCTRL_E0,	(uint8_t *)"\x00\x03\x09\x08\x16\x0A\x3F\x78\x4C\x09\x0A\x08\x16\x1a\x0f", 15);
+	TFT_Command(CMD_NGAMCTRL_E1,	(uint8_t *)"\x00\x16\x19\x03\x0F\x05\x32\x45\x46\x04\x0E\x0D\x35\x37\x0F", 15);
 	// Power Control 1: Vreg1out, Verg2out
-	TFT_SPI_Command(CMD_PWCTRL1_C0,	(uint8_t *)"\x17\x15", 2);
+	TFT_Command(CMD_PWCTRL1_C0,	(uint8_t *)"\x17\x15", 2);
 	// Power Control 2: VGH, VGL
-	TFT_SPI_Command(CMD_PWCTRL2_C1,	(uint8_t *)"\x41", 1);
+	TFT_Command(CMD_PWCTRL2_C1,	(uint8_t *)"\x41", 1);
 	TFT_Delay(5);
 	// Power Control 3: Vcom
-	TFT_SPI_Command(CMD_VMCTRL1_C5,	(uint8_t *)"\x00\x12\x80", 3);
+	TFT_Command(CMD_VMCTRL1_C5,	(uint8_t *)"\x00\x12\x80", 3);
 	TFT_Delay(5);
 	// Interface Mode Control: DIN and SDO pins are used for 3/4 wire serial interface.
-	TFT_SPI_Command(CMD_IFMODE_B0,		(uint8_t *)"\x00", 1);
+	TFT_Command(CMD_IFMODE_B0,		(uint8_t *)"\x00", 1);
 	// Interface Pixel Format: 18 bits
-	TFT_SPI_Command(CMD_PIXSET_3A,		(uint8_t *)"\x66", 1);
+	TFT_Command(CMD_PIXSET_3A,		(uint8_t *)"\x66", 1);
 
 	// Frame rate: 60 Hz
-	TFT_SPI_Command(CMD_FRMCTR1_B1,	(uint8_t *)"\xA0", 1);
+	TFT_Command(CMD_FRMCTR1_B1,	(uint8_t *)"\xA0", 1);
 	//Display Inversion Control: 2 dot inversion
-	TFT_SPI_Command(CMD_INVTR_B4,		(uint8_t *)"\x02", 1);
+	TFT_Command(CMD_INVTR_B4,		(uint8_t *)"\x02", 1);
 	// Display function control
-	TFT_SPI_Command(CMD_DISCTRL_B6,	(uint8_t *)"\x02\0x02", 2);
+	TFT_Command(CMD_DISCTRL_B6,	(uint8_t *)"\x02\0x02", 2);
 	// Set Image Function: Disable 24-bits Data Bus
-	TFT_SPI_Command(CMD_SIMGF_E9,		(uint8_t *)"\x00", 1);
+	TFT_Command(CMD_SIMGF_E9,		(uint8_t *)"\x00", 1);
 	// Adjust Control 3: DSI write DCS command, use loose packet RGB 666
-	TFT_SPI_Command(CMD_ADJCTRL3_F7,	(uint8_t *)"\xA9\x51\x2C\x82", 4);
+	TFT_Command(CMD_ADJCTRL3_F7,	(uint8_t *)"\xA9\x51\x2C\x82", 4);
 	TFT_Delay(5);
 
 	// Exit sleep mode
 	TFT_DEF_SleepOut();
 
 	// Turn On Display
-	TFT_SPI_Command(CMD_DISPON_29,		0, 0);
+	TFT_Command(CMD_DISPON_29,		0, 0);
 	TFT_Delay(5);
 	// Memory access mode
-	TFT_SPI_Command(CMD_MADCTL_36,		(uint8_t *)"\0x48", 1);
+	TFT_Command(CMD_MADCTL_36,		(uint8_t *)"\0x48", 1);
 	
 	// Setup display parameters
 	uint8_t rot[4] = {0x40|0x08, 0x20|0x08, 0x80|0x08, 0x40|0x80|0x20|0x08};
-	TFT_Setup(ILI9488_SCREEN_WIDTH, ILI9488_SCREEN_HEIGHT, rot, 0);
-	TFT_Pixel_Setup(TFT_18bits);
+	TFT_Setup(ILI9488_SCREEN_WIDTH, ILI9488_SCREEN_HEIGHT, rot);
 }

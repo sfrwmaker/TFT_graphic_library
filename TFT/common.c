@@ -1,23 +1,20 @@
 /*
  * common.c
  *
- *  Created on: Nov 18, 2020
+ *  Created on: Nov 4, 2022
  *      Author: Alex
  */
 
+#include <ll_spi.h>
 #include <stdlib.h>
 #include "common.h"
-#include "low_level.h"
 
 // Forward function declarations
-static void TFT_SPI_StartDrawArea(uint16_t x0, uint16_t y0, uint16_t width, uint16_t height);
-static void TFT_SPI_DrawFilledRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t color);
-static void TFT_SPI_DrawPixel_16bits(uint16_t x,  uint16_t y, uint16_t color);
-static void TFT_SPI_DrawPixel_18bits(uint16_t x,  uint16_t y, uint16_t color);
-static void	TFT_DrawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t cornername, uint16_t color);
-static void TFT_DrawFilledCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t cornername, uint16_t delta, uint16_t color);
-static void swap16(uint16_t* a, uint16_t* b);
-static void swap32(int32_t*  a, int32_t* b);
+static uint32_t	TFT_Read(uint8_t cmd, uint8_t length);
+static void		TFT_DrawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t cornername, uint16_t color);
+static void 	TFT_DrawFilledCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t cornername, uint16_t delta, uint16_t color);
+static void 	swap16(uint16_t* a, uint16_t* b);
+static void 	swap32(int32_t*  a, int32_t* b);
 
 // Width & Height of the display used to draw elements (with rotation)
 static uint16_t				TFT_WIDTH		= 0;
@@ -28,10 +25,6 @@ static uint8_t				madctl_arg[4]	= {0x40|0x08, 0x20|0x08, 0x80|0x08, 0x40|0x80|0x
 static uint16_t				TFT_WIDTH_0		= 0;	// Generic display width  (without rotation)
 static uint16_t				TFT_HEIGHT_0	= 0;	// Generic display height (without rotation)
 
-static t_StartDrawArea		pStartDrawArea	= TFT_SPI_StartDrawArea;
-static t_DrawFilledRect		pDrawFilledRect	= TFT_SPI_DrawFilledRect;
-static t_DrawPixel			pDrawPixel		= TFT_SPI_DrawPixel_16bits;
-static t_ColorBlockSend		pColorBlockSend	= TFT_SPI_ColorBlockSend_16bits;
 
 uint16_t TFT_Width(void) {
 	return TFT_WIDTH;
@@ -45,34 +38,16 @@ tRotation TFT_Rotation(void) {
 	return angle;
 }
 
-void TFT_Setup(uint16_t generic_width, uint16_t generic_height, uint8_t madctl[4], tTFT_INTFUNC *pINT) {
+void TFT_Setup(uint16_t generic_width, uint16_t generic_height, uint8_t madctl[4]) {
 	TFT_WIDTH_0		= generic_width;
 	TFT_HEIGHT_0	= generic_height;
 	if (madctl) {
 		for (uint8_t i = 0; i < 4; ++i)
 			madctl_arg[i] = madctl[i];
 	}
-	if (pINT) {
-		pStartDrawArea	= (pINT->pStartDrawArea)?pINT->pStartDrawArea:TFT_SPI_StartDrawArea;
-		pDrawFilledRect	= (pINT->pDrawFilledRect)?pINT->pDrawFilledRect:TFT_SPI_DrawFilledRect;
-		pDrawPixel		= (pINT->pDrawPixel)?pINT->pDrawPixel:TFT_SPI_DrawPixel_16bits;
-	}
 	TFT_SetRotation(TFT_ROTATION_0);
-}
-
-void TFT_Pixel_Setup(tTFT_PIXEL_BITS pixel_bits) {
-	switch (pixel_bits) {
-		case TFT_18bits:
-			if (pDrawPixel == TFT_SPI_DrawPixel_16bits || pDrawPixel == TFT_SPI_DrawPixel_18bits)
-				pDrawPixel  = TFT_SPI_DrawPixel_18bits;
-			pColorBlockSend	= TFT_SPI_ColorBlockSend_18bits;
-			break;
-		case TFT_16bits:
-		default:
-			if (pDrawPixel == TFT_SPI_DrawPixel_16bits || pDrawPixel == TFT_SPI_DrawPixel_18bits)
-				pDrawPixel = TFT_SPI_DrawPixel_16bits;
-			pColorBlockSend	= TFT_SPI_ColorBlockSend_16bits;
-	}
+	// Initialize transfer infrastructure for the display SPI bus (With DMA)
+	IFACE_ColorBlockInit();
 }
 
 void TFT_SetRotation(tRotation rotation)  {
@@ -92,7 +67,7 @@ void TFT_SetRotation(tRotation rotation)  {
 			break;
 	}
 	// Perform CMD_MADCTL_36 command
-	TFT_SPI_Command(0x36, &madctl_arg[(uint8_t)rotation], 1);
+	TFT_Command(0x36, &madctl_arg[(uint8_t)rotation], 1);
 	TFT_Delay(10);
 	angle = rotation;
 }
@@ -114,33 +89,51 @@ uint16_t TFT_Color(uint8_t red, uint8_t green, uint8_t blue) {
 	return ((red & 0xF8) << 8) | ((green & 0xFC) << 3) | (blue >> 3);
 }
 
+void TFT_SetAttrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
+	uint8_t data[4];
+
+	// column address set
+	data[0] = (x0 >> 8) & 0xFF;
+	data[1] = x0 & 0xFF;
+	data[2] = (x1 >> 8) & 0xFF;
+	data[3] = x1 & 0xFF;
+	TFT_Command(0x2A, data, 4);
+
+	// row address set
+    data[0] = (y0 >> 8) & 0xFF;
+    data[1] = y0 & 0xFF;
+    data[2] = (y1 >> 8) & 0xFF;
+    data[3] = y1 & 0xFF;
+    TFT_Command(0x2B, data, 4);
+}
+
+// Initializes the rectangular area for new data
 void TFT_StartDrawArea(uint16_t x0, uint16_t y0, uint16_t width, uint16_t height) {
-	(*pStartDrawArea)(x0, y0, width, height);
+	TFT_SetAttrWindow(x0, y0, x0 + width - 1, y0 + height -1);
+	TFT_Command(0x2C, 0, 0);							// write to RAM
+	IFACE_DataMode();
 }
 
-void TFT_FinishDrawArea(void) {
-	TFT_SPI_ColorBlockFlush();							// Flush color block buffer
-}
-
-void TFT_ColorBlockSend(uint16_t color, uint32_t size) {
-	(*pColorBlockSend)(color, size);
-}
-
+// Fills the rectangular area with a single color
 void TFT_DrawFilledRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t color) {
 	if ((x > TFT_WIDTH) || (y > TFT_HEIGHT) || (width < 1) || (height < 1)) return;
 	if ((x + width  - 1) > TFT_WIDTH)  width  = TFT_WIDTH  - x;
 	if ((y + height - 1) > TFT_HEIGHT) height = TFT_HEIGHT - y;
-	(*pDrawFilledRect)(x, y, width, height, color);
+	TFT_SetAttrWindow(x, y, x + width - 1, y + height - 1);
+	TFT_Command(0x2C, 0, 0);							// write to RAM
+	IFACE_DataMode();
+	TFT_ColorBlockSend(color, width*height);
+	TFT_FinishDrawArea();
 }
 
 // Sets address (entire screen) and Sends Height*Width amount of color information to Display
 void TFT_FillScreen(uint16_t color) {
-	(*pDrawFilledRect)(0, 0, TFT_WIDTH, TFT_HEIGHT, color);
+	TFT_DrawFilledRect(0, 0, TFT_WIDTH, TFT_HEIGHT, color);
 }
 
 void TFT_DrawPixel(uint16_t x,  uint16_t y, uint16_t color) {
 	if ((x >=TFT_WIDTH) || (y >=TFT_HEIGHT)) return;
-	(*pDrawPixel)(x, y, color);
+	IFACE_DrawPixel(x, y, color);
 }
 
 void TFT_DrawHLine(uint16_t x, uint16_t y, uint16_t length, uint16_t color) {
@@ -213,7 +206,7 @@ void TFT_DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t c
 			if (err < 0) {
 				err += dx;
 				if (dlen == 1)
-					(*pDrawPixel)(y0, xs, color);
+					TFT_DrawPixel(y0, xs, color);
 				else TFT_DrawVLine(y0, xs, dlen, color);
 				dlen = 0; y0 += ystep; xs = x0 + 1;
 			}
@@ -226,7 +219,7 @@ void TFT_DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t c
 			if (err < 0) {
 				err += dx;
 				if (dlen == 1)
-					(*pDrawPixel)(xs, y0, color);
+					TFT_DrawPixel(xs, y0, color);
 				else TFT_DrawHLine(xs, y0, dlen, color);
 				dlen = 0; y0 += ystep; xs = x0 + 1;
 			}
@@ -441,13 +434,11 @@ void TFT_DrawFilledEllipse(uint16_t x0, uint16_t y0, uint16_t rx, uint16_t ry, u
 
 // Draw rectangle Area. Every pixel generated by the callback function nextPixelCB
 void TFT_DrawArea(uint16_t x0, uint16_t y0, uint16_t area_width, uint16_t area_height, t_NextPixel nextPixelCB) {
-
 	if (x0 >= TFT_WIDTH || y0 >= TFT_HEIGHT || area_width < 1 || area_height < 1) return;
 	if ((x0 + area_width  - 1) > TFT_WIDTH)  area_width  = TFT_WIDTH  - x0;
 	if ((y0 + area_height - 1) > TFT_HEIGHT) area_height = TFT_HEIGHT - y0;
 
-	(*pStartDrawArea)(x0, y0, area_width, area_height);
-
+	TFT_StartDrawArea(x0, y0, area_width, area_height);
 	// Write color data row by row
     for (uint16_t row = 0; row < area_height; ++row) {
     	for (uint16_t bit = 0; bit < area_width; ++bit) {
@@ -466,7 +457,7 @@ void TFT_DrawBitmap(uint16_t x0, uint16_t y0, uint16_t area_width, uint16_t area
 	if ((x0 + area_width  - 1) > TFT_WIDTH)  area_width  = TFT_WIDTH  - x0;
 	if ((y0 + area_height - 1) > TFT_HEIGHT) area_height = TFT_HEIGHT - y0;
 
-	(*pStartDrawArea)(x0, y0, area_width, area_height);
+	TFT_StartDrawArea(x0, y0, area_width, area_height);
 
 	uint16_t bytes_per_row = (bm_width + 7) >> 3;
 	// Write color data row by row
@@ -499,7 +490,7 @@ void TFT_DrawScrolledBitmap(uint16_t x0, uint16_t y0, uint16_t area_width, uint1
 	if ((y0 + area_height - 1) > TFT_HEIGHT) area_height = TFT_HEIGHT - y0;
 	while (offset >= bm_width) offset -= bm_width + gap;
 
-	(*pStartDrawArea)(x0, y0, area_width, area_height);
+	TFT_StartDrawArea(x0, y0, area_width, area_height);
 
     uint16_t bytes_per_row = (bm_width + 7) >> 3;
     // Write color data row by row
@@ -556,7 +547,7 @@ void TFT_DrawPixmap(uint16_t x0, uint16_t y0, uint16_t area_width, uint16_t area
 	if ((x0 + area_width  - 1) > TFT_WIDTH)  area_width  = TFT_WIDTH  - x0;
 	if ((y0 + area_height - 1) > TFT_HEIGHT) area_height = TFT_HEIGHT - y0;
 
-	(*pStartDrawArea)(x0, y0, area_width, area_height);
+	TFT_StartDrawArea(x0, y0, area_width, area_height);
 
 	uint16_t bytes_per_row = (pm_width*depth + 7) >> 3;
 	// Write color data row by row
@@ -593,39 +584,45 @@ void TFT_DrawPixmap(uint16_t x0, uint16_t y0, uint16_t area_width, uint16_t area
 }
 
 // ======================================================================
+// Display specific default functions
+// ======================================================================
+uint32_t TFT_DEF_ReadID4(void) {
+	return TFT_Read(0xD3, 3);
+}
+
+uint16_t TFT_ReadPixel(uint16_t x, uint16_t y, bool is16bit_color) {
+	if ((x >=TFT_WIDTH) || (y >=TFT_HEIGHT)) return 0;
+
+	if (is16bit_color)
+		TFT_Command(0x3A, (uint8_t *)"\x66", 1);
+	TFT_SetAttrWindow(x, y, x, y);
+	uint16_t ret = 0;
+	uint8_t data[4];
+	if (TFT_ReadData(0x2E, data, 4)) {
+		ret = TFT_Color(data[1], data[2], data[3]);
+	}
+	if (is16bit_color)
+		TFT_Command(0x3A, (uint8_t *)"\x55", 1);
+	return ret;
+}
+
+// ======================================================================
 // Internal functions
 // ======================================================================
-
-// Initializes the rectangular area for new data
-static void TFT_SPI_StartDrawArea(uint16_t x0, uint16_t y0, uint16_t width, uint16_t height) {
-	TFT_SPI_SetAddrWindow(x0, y0, x0 + width - 1, y0 + height -1);
-	TFT_SPI_Command(0x2C, 0, 0);				// write to RAM
-	TFT_SPI_DATA_MODE();
-}
-
-// Fills the rectangular area with a single color
-static void TFT_SPI_DrawFilledRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t color) {
-	TFT_SPI_SetAddrWindow(x, y, x + width - 1, y + height - 1);
-	TFT_SPI_Command(0x2C, 0, 0);				// write to RAM
-	TFT_SPI_DATA_MODE();
-	(*pColorBlockSend)(color, width*height);
-	TFT_FinishDrawArea();
-}
-
-// Draws single pixel using display working in 16 bits mode
-static void TFT_SPI_DrawPixel_16bits(uint16_t x,  uint16_t y, uint16_t color) {
-	if ((x >=TFT_WIDTH) || (y >=TFT_HEIGHT)) return;
-	uint8_t clr[2] = { (color>>8) & 0xFF, color & 0xFF };
-	TFT_SPI_SetAddrWindow(x, y, x, y);
-	TFT_SPI_Command(0x2C, clr, 2);
-}
-
-// Draws single pixel using display working in 18 bits SPI mode (ILI9488 supports 3 bits or 18 bits per pixel in SPI mode)
-static void TFT_SPI_DrawPixel_18bits(uint16_t x,  uint16_t y, uint16_t color) {
-	if ((x >=TFT_WIDTH) || (y >=TFT_HEIGHT)) return;
-	uint8_t clr[3] = { (color & 0xF800) >> 8, (color & 0x7E0) >> 3, (color & 0x1F) << 3 };
-	TFT_SPI_SetAddrWindow(x, y, x, y);
-	TFT_SPI_Command(0x2C, clr, 3);				// write to RAM
+// Read up-to 4 bytes of data from the display and returns 32-bits word
+static uint32_t TFT_Read(uint8_t cmd, uint8_t length) {
+	if (length == 0 || length > 4)
+		return 0xffffffff;
+	uint8_t data[4];
+	if (TFT_ReadData(cmd, data, 4)) {
+		uint32_t value = 0;
+		for (uint8_t i = 0; i < length; ++i) {
+			value <<= 8;
+			value |= data[i];
+		}
+		return value;
+	}
+	return 0xffffffff;
 }
 
 // Draw round corner

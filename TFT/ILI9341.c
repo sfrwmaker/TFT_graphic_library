@@ -88,59 +88,59 @@ typedef enum {
 
 // Initialize the Display
 void ILI9341_Init(void) {
-	// Initialize transfer infrastructure for the display SPI bus (With DMA)
-	TFT_SPI_ColorBlockInit();
+	// Initialize display interface. By default the library guess the display interface
+	TFT_InterfaceSetup(TFT_16bits, 0);
+
 	// Reset display hardware
 	TFT_DEF_Reset();
 	// SOFTWARE RESET
-	TFT_SPI_Command(CMD_SWRESET_01,		0, 0);
+	TFT_Command(CMD_SWRESET_01,		0, 0);
 	TFT_Delay(1000);
 
 	// Power Control A
-	TFT_SPI_Command(0xCB,				(uint8_t *)"\x39\x2C\x00\x34\x002", 5);
+	TFT_Command(0xCB,				(uint8_t *)"\x39\x2C\x00\x34\x002", 5);
 	// Power Control B
-	TFT_SPI_Command(0xCF,				(uint8_t *)"\x00\xC1\x30", 3);
+	TFT_Command(0xCF,				(uint8_t *)"\x00\xC1\x30", 3);
 	// Driver timing control A
-	TFT_SPI_Command(0xE8,				(uint8_t *)"\x85\x00\x78", 3);
+	TFT_Command(0xE8,				(uint8_t *)"\x85\x00\x78", 3);
 	// Driver timing control B
-	TFT_SPI_Command(0xEA,				(uint8_t *)"\x00\x00", 2);
+	TFT_Command(0xEA,				(uint8_t *)"\x00\x00", 2);
 	// Power on Sequence control
-	TFT_SPI_Command(0xCF,				(uint8_t *)"\x64\x03\x12\x81", 4);
+	TFT_Command(0xCF,				(uint8_t *)"\x64\x03\x12\x81", 4);
 	// Pump ratio control
-	TFT_SPI_Command(0xF7,				(uint8_t *)"\x20", 1);
+	TFT_Command(0xF7,				(uint8_t *)"\x20", 1);
 	// Power Control,VRH[5:0]
-	TFT_SPI_Command(CMD_PWCTRL1_C0,		(uint8_t *)"\x23", 1);
+	TFT_Command(CMD_PWCTRL1_C0,		(uint8_t *)"\x23", 1);
 	// Power Control,SAP[2:0];BT[3:0]
-	TFT_SPI_Command(CMD_PWCTRL2_C1,		(uint8_t *)"\x10", 1);
+	TFT_Command(CMD_PWCTRL2_C1,		(uint8_t *)"\x10", 1);
 	// VCOM Control 1
-	TFT_SPI_Command(CMD_VMCTRL1_C5,		(uint8_t *)"\x3E\x28", 2);
+	TFT_Command(CMD_VMCTRL1_C5,		(uint8_t *)"\x3E\x28", 2);
 	// VCOM Control 2
-	TFT_SPI_Command(CMD_VMCTRL1_C7,		(uint8_t *)"\x86", 1);
+	TFT_Command(CMD_VMCTRL1_C7,		(uint8_t *)"\x86", 1);
 	// Memory Access Control
-	TFT_SPI_Command(CMD_MADCTL_36,		(uint8_t *)"\x48", 1);
+	TFT_Command(CMD_MADCTL_36,		(uint8_t *)"\x48", 1);
 	// Pixel Format Set
-	TFT_SPI_Command(CMD_PIXSET_3A,		(uint8_t *)"\x55", 1);
+	TFT_Command(CMD_PIXSET_3A,		(uint8_t *)"\x55", 1);
 	// Frame Rratio Control, Standard RGB Color
-	TFT_SPI_Command(CMD_FRMCTR1_B1,		(uint8_t *)"\x00\x18", 2);
+	TFT_Command(CMD_FRMCTR1_B1,		(uint8_t *)"\x00\x18", 2);
 	// Display Function Control
-	TFT_SPI_Command(CMD_DISCTRL_B6,		(uint8_t *)"\x08\x82\x27", 3);
+	TFT_Command(CMD_DISCTRL_B6,		(uint8_t *)"\x08\x82\x27", 3);
 	//3Gammf function disable
-	TFT_SPI_Command(0xF2,		(uint8_t *)"\x00", 1);
+	TFT_Command(0xF2,		(uint8_t *)"\x00", 1);
 	// Gamma set
-	TFT_SPI_Command(CMD_GAMSET_26,		(uint8_t *)"\x01", 1);
+	TFT_Command(CMD_GAMSET_26,		(uint8_t *)"\x01", 1);
 	// Positive Gamma  Correction
-	TFT_SPI_Command(CMD_PGAMCTRL_E0,	(uint8_t *)"\x0F\x31\x2B\x0C\x0E\x08\x4E\xF1\x37\x07\x10\x03\x0E\x09\x00", 15);
+	TFT_Command(CMD_PGAMCTRL_E0,	(uint8_t *)"\x0F\x31\x2B\x0C\x0E\x08\x4E\xF1\x37\x07\x10\x03\x0E\x09\x00", 15);
 	// Negative Gamma  Correction
-	TFT_SPI_Command(CMD_NGAMCTRL_E1,	(uint8_t *)"\x00\x0E\x14\x03\x11\x07\x31\xC1\x48\x08\x0F\x0C\x31\x36\x0F", 15);
+	TFT_Command(CMD_NGAMCTRL_E1,	(uint8_t *)"\x00\x0E\x14\x03\x11\x07\x31\xC1\x48\x08\x0F\x0C\x31\x36\x0F", 15);
 	// Exit sleep mode
 	TFT_DEF_SleepOut();
 
 	// Turn On Display
-	TFT_SPI_Command(CMD_DISPON_29,		0, 0);
+	TFT_Command(CMD_DISPON_29,		0, 0);
 
 	// Setup display parameters
 	uint8_t rot[4] = {0x40|0x08, 0x20|0x08, 0x80|0x08, 0x40|0x80|0x20|0x08};
-	TFT_Setup(ILI9341_SCREEN_WIDTH, ILI9341_SCREEN_HEIGHT, rot, 0);
-	TFT_Pixel_Setup(TFT_16bits);
+	TFT_Setup(ILI9341_SCREEN_WIDTH, ILI9341_SCREEN_HEIGHT, rot);
 }
 
