@@ -8,4 +8,4 @@ SD_SPI is a driver for SD-card reader connected via SPI bus
 TFT is a graphic library source directory
 
 UPDATED Feb 04 2023
-Modified the touch screen library based on XPT2046 IC
+Added the touch screen library based on XPT2046 IC
