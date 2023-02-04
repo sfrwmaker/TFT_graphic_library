@@ -81,7 +81,11 @@ void Error_Handler(void);
 #define SD_MISO_GPIO_Port GPIOB
 #define SD_MOSI_Pin GPIO_PIN_5
 #define SD_MOSI_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
+
+// un-comment this line to enable touch screen routines
+#define WITH_TOUCH	1
 
 /* USER CODE END Private defines */
 
