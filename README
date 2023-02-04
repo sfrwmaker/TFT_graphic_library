@@ -1,6 +1,8 @@
 This is a 16-bit color graphic library for TFT displays based on following controllers: ili9341, ili9488, st7735 and st7796.
 The library supports SPI or FSMC approaches to connect the display.
 The library can work on STM32 micro-controllers and uses HAL development library.
+Please, see the comments on TFT/config.h. You have to configure some parameters depending on your display hardware.
+The touch screen feature can be activated in the Inc/main.h file.
 Directory structure:
 Inc & Src directories is the example source code that illustrate how to use the library.
 FatFS is a generic FAT library (http://elm-chan.org/fsw/ff/00index_e.html) that has been configured to work with SD-card
