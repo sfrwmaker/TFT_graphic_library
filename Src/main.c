@@ -51,8 +51,8 @@ DMA_HandleTypeDef hdma_spi1_tx;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_SPI1_Init(void);
 static void MX_DMA_Init(void);
+static void MX_SPI1_Init(void);
 static void MX_SPI3_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -91,8 +91,8 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_SPI1_Init();
   MX_DMA_Init();
+  MX_SPI1_Init();
   MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
   setup();
@@ -266,10 +266,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, TOUCH_CS_Pin|SD_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(TFT_CS_GPIO_Port, TFT_CS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, TFT_CS_Pin|TFT_RESET_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, TFT_DC_Pin|TFT_RESET_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(TFT_DC_GPIO_Port, TFT_DC_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : TOUCH_CS_Pin SD_CS_Pin */
   GPIO_InitStruct.Pin = TOUCH_CS_Pin|SD_CS_Pin;
@@ -281,7 +281,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : TOUCH_IRQ_Pin */
   GPIO_InitStruct.Pin = TOUCH_IRQ_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(TOUCH_IRQ_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : TFT_CS_Pin TFT_DC_Pin TFT_RESET_Pin */

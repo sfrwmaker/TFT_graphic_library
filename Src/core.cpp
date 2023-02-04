@@ -12,6 +12,10 @@
 #include "tft.h"
 #include "ff.h"
 
+#ifdef WITH_TOUCH
+#include "ts.h"
+#endif
+
 static const uint8_t bmArrowH[] = {
   0b11100000,
   0b00111100,
@@ -106,7 +110,7 @@ static const uint8_t bmFan[4][288] = {
 	0X1C,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00 },
 };
 
-static tft_ILI9341	dspl;
+tft_ILI9488	dspl;									// Can be used by touch screen utilities (see ts.h)
 static GRAPH		graph;
 static PIXMAP		pixmap;
 static BITMAP		bm_preset;
@@ -114,8 +118,12 @@ static FATFS		fs;
 
 extern "C" void setup(void) {
 	dspl.init();
-	dspl.setRotation(TFT_ROTATION_90);				// Setup landscape mode
 	f_mount(&fs, "0:/", 1);
+#ifdef WITH_TOUCH
+	TouchCalibrate();
+#endif
+	dspl.fillScreen(CYAN);
+	dspl.setRotation(TFT_ROTATION_180);				// Setup landscape mode
 }
 
 uint32_t Random(uint32_t min, uint32_t max) {
@@ -680,7 +688,11 @@ extern "C" void loop(void) {
 	uint16_t sc_width  	= dspl.width();
 	uint16_t sc_height 	= dspl.height();
 	const uint32_t n	= 300;
-
+#ifdef WITH_TOUCH
+	// Test Touch screen feature
+	Touch(TFT_ROTATION_180);
+	dspl.fillScreen(WHITE);
+#endif
 	hLines(sc_width, sc_height);
 	vLines(sc_width, sc_height);
 	drawRects(sc_width, sc_height);
@@ -707,7 +719,6 @@ extern "C" void loop(void) {
 		drawPicture();
 		scrollStringOverBMP("v4.bmp");
 	}
-
 	HAL_Delay(10000);
 }
 
